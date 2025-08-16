@@ -447,7 +447,6 @@ async def create_or_update_grade(grade_data: GradeCreate):
         await db.grades.insert_one(grade_obj.dict())
         return grade_obj
 
-# Report Endpoints
 @api_router.get("/reports/grades/{kelas}")
 async def get_class_grade_report(kelas: str):
     # Get all students in class
@@ -458,8 +457,11 @@ async def get_class_grade_report(kelas: str):
     
     result = []
     for student in students:
+        # Clean student data
+        student_clean = {k: v for k, v in student.items() if k != "_id"}
+        
         student_data = {
-            "student": Student(**student),
+            "student": Student(**student_clean),
             "grades": [],
             "average": 0
         }
