@@ -412,9 +412,13 @@ async def get_grades_by_criteria(subject_id: str, kelas: str, objective_id: str)
             "learning_objective_id": objective_id
         })
         
+        # Clean student data
+        student_clean = {k: v for k, v in student.items() if k != "_id"}
+        grade_clean = {k: v for k, v in grade.items() if k != "_id"} if grade else None
+        
         result.append({
-            "student": Student(**student),
-            "grade": Grade(**grade) if grade else None
+            "student": Student(**student_clean),
+            "grade": Grade(**grade_clean) if grade_clean else None
         })
     
     return result
