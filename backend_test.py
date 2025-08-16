@@ -290,6 +290,10 @@ class TeacherGradingAPITester:
                 print("❌ Root endpoint failed - stopping tests")
                 return 1
 
+            # Clean up any existing test data first
+            print("\n🧹 Cleaning up any existing test data...")
+            self.run_test("Delete All Students", "DELETE", "students", 200)
+
             # Test all modules
             self.test_student_management()
             self.test_subject_management() 
