@@ -90,8 +90,8 @@ class TeacherGradingAPITester:
 
         # Test create another student for class filtering
         student_data2 = {
-            "nama": "Test Student 2",
-            "nis": "TEST002", 
+            "nama": f"Test Student 2 {timestamp}",
+            "nis": f"TEST2{timestamp}", 
             "kelas": "X2",
             "jenis_kelamin": "Perempuan",
             "status": "Aktif"
