@@ -279,7 +279,7 @@ async def create_learning_objective(objective: LearningObjectiveCreate):
 @api_router.get("/learning-objectives", response_model=List[LearningObjective])
 async def get_learning_objectives():
     objectives = await db.learning_objectives.find().sort("tujuan_pembelajaran", 1).to_list(1000)
-    return [LearningObjective(**objective) for objective in objectives]
+    return [LearningObjective(**{k: v for k, v in objective.items() if k != "_id"}) for objective in objectives]
 
 @api_router.put("/learning-objectives/{objective_id}", response_model=LearningObjective)
 async def update_learning_objective(objective_id: str, objective_update: LearningObjectiveCreate):
