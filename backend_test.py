@@ -149,11 +149,11 @@ class TeacherGradingAPITester:
         success, _ = self.run_test("Get All Subjects", "GET", "subjects", 200)
 
         # Test update subject
-        update_data = {"nama_mata_pelajaran": "Matematika Lanjutan"}
+        update_data = {"nama_mata_pelajaran": f"Matematika Lanjutan {timestamp}"}
         success, _ = self.run_test("Update Subject", "PUT", f"subjects/{subject_id}", 200, update_data)
 
         # Test create learning objective
-        objective_data = {"tujuan_pembelajaran": "Memahami konsep dasar aljabar"}
+        objective_data = {"tujuan_pembelajaran": f"Memahami konsep dasar aljabar {timestamp}"}
         success, response = self.run_test("Create Learning Objective", "POST", "learning-objectives", 200, objective_data)
         if success and 'id' in response:
             self.created_ids['learning_objectives'].append(response['id'])
