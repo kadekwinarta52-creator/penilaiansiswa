@@ -492,7 +492,225 @@ async def get_class_grade_report(kelas: str):
     
     return result
 
-# Excel Template and Import endpoints will be added in the next part
+# Excel Template and Import/Export Endpoints
+@api_router.get("/students/template/download")
+async def download_student_template():
+    # Create Excel template
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template Data Siswa"
+    
+    # Headers
+    headers = ["Nama", "NIS", "Kelas", "Jenis Kelamin", "Status"]
+    ws.append(headers)
+    
+    # Sample data
+    ws.append(["Contoh Siswa", "12345", "X1", "Laki-laki", "Aktif"])
+    
+    # Style headers
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Add data validation comments
+    ws["A3"] = "Petunjuk:"
+    ws["A4"] = "- Nama: Nama lengkap siswa"
+    ws["A5"] = "- NIS: Nomor Induk Siswa (bisa huruf/angka)"
+    ws["A6"] = "- Kelas: Format X1, X2, XI1, XI2, XII1, XII2, dst"
+    ws["A7"] = "- Jenis Kelamin: Laki-laki atau Perempuan"
+    ws["A8"] = "- Status: Aktif atau Tidak Aktif"
+    
+    # Save to BytesIO
+    excel_buffer = BytesIO()
+    wb.save(excel_buffer)
+    excel_buffer.seek(0)
+    
+    return StreamingResponse(
+        BytesIO(excel_buffer.read()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=template_data_siswa.xlsx"}
+    )
+
+@api_router.post("/students/import")
+async def import_students_from_excel(file: UploadFile = File(...)):
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="File harus berformat Excel (.xlsx atau .xls)")
+    
+    try:
+        # Read Excel file
+        contents = await file.read()
+        df = pd.read_excel(BytesIO(contents))
+        
+        # Validate columns
+        required_columns = ["Nama", "NIS", "Kelas", "Jenis Kelamin", "Status"]
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(status_code=400, detail=f"Kolom yang hilang: {', '.join(missing_columns)}")
+        
+        imported_count = 0
+        duplicate_count = 0
+        error_rows = []
+        
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Nama']) or pd.isna(row['NIS']):
+                    continue
+                
+                # Check for duplicate NIS
+                existing_student = await get_student_by_nis(str(row['NIS']).strip())
+                if existing_student:
+                    duplicate_count += 1
+                    continue
+                
+                # Validate gender
+                gender = str(row['Jenis Kelamin']).strip()
+                if gender not in ["Laki-laki", "Perempuan"]:
+                    error_rows.append(f"Baris {index + 2}: Jenis kelamin tidak valid ({gender})")
+                    continue
+                
+                # Validate status
+                status = str(row['Status']).strip() if not pd.isna(row['Status']) else "Aktif"
+                if status not in ["Aktif", "Tidak Aktif"]:
+                    status = "Aktif"
+                
+                # Create student
+                student_data = StudentCreate(
+                    nama=str(row['Nama']).strip(),
+                    nis=str(row['NIS']).strip(),
+                    kelas=str(row['Kelas']).strip(),
+                    jenis_kelamin=gender,
+                    status=status
+                )
+                
+                student_dict = student_data.dict()
+                student_obj = Student(**student_dict)
+                await db.students.insert_one(student_obj.dict())
+                imported_count += 1
+                
+            except Exception as e:
+                error_rows.append(f"Baris {index + 2}: {str(e)}")
+        
+        return {
+            "message": f"Import selesai",
+            "imported_count": imported_count,
+            "duplicate_count": duplicate_count,
+            "error_count": len(error_rows),
+            "errors": error_rows[:10]  # Show first 10 errors
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error membaca file Excel: {str(e)}")
+
+@api_router.get("/reports/grades/{kelas}/export")
+async def export_class_grades_to_excel(kelas: str):
+    # Get grade report data
+    report_data = await get_class_grade_report(kelas)
+    
+    if not report_data:
+        raise HTTPException(status_code=404, detail="Tidak ada data untuk kelas ini")
+    
+    # Create Excel workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Nilai Kelas {kelas}"
+    
+    # Create headers
+    headers = ["No", "Nama", "NIS"]
+    
+    # Get unique subjects and objectives
+    all_objectives = set()
+    for student_data in report_data:
+        for grade in student_data["grades"]:
+            obj_key = f"{grade['subject']} - {grade['objective']}"
+            all_objectives.add(obj_key)
+    
+    sorted_objectives = sorted(list(all_objectives))
+    headers.extend(sorted_objectives)
+    headers.append("Rata-rata")
+    
+    # Add headers to worksheet
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Add student data
+    for row_num, student_data in enumerate(report_data, 2):
+        # Basic info
+        ws.cell(row=row_num, column=1, value=row_num - 1)
+        ws.cell(row=row_num, column=2, value=student_data["student"].nama)
+        ws.cell(row=row_num, column=3, value=student_data["student"].nis)
+        
+        # Grades
+        for grade in student_data["grades"]:
+            obj_key = f"{grade['subject']} - {grade['objective']}"
+            if obj_key in sorted_objectives:
+                col_num = headers.index(obj_key) + 1
+                ws.cell(row=row_num, column=col_num, value=grade["nilai"] if grade["nilai"] is not None else "-")
+        
+        # Average
+        avg_col = len(headers)
+        ws.cell(row=row_num, column=avg_col, value=student_data["average"] if student_data["average"] > 0 else "-")
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min((max_length + 2) * 1.2, 50)  # Max width 50
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Add borders
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.border = thin_border
+            if cell.row > 1:  # Data rows
+                cell.alignment = Alignment(horizontal="center")
+    
+    # Save to BytesIO
+    excel_buffer = BytesIO()
+    wb.save(excel_buffer)
+    excel_buffer.seek(0)
+    
+    filename = f"nilai_kelas_{kelas.replace(' ', '_')}.xlsx"
+    return StreamingResponse(
+        BytesIO(excel_buffer.read()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/")
 async def root():
     return {"message": "Aplikasi Penilaian Guru API", "version": "1.0.0"}
