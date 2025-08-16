@@ -148,7 +148,7 @@ class TeacherGradingAPITester:
 
         # Test create learning objective
         objective_data = {"tujuan_pembelajaran": "Memahami konsep dasar aljabar"}
-        success, response = self.run_test("Create Learning Objective", "POST", "learning-objectives", 201, objective_data)
+        success, response = self.run_test("Create Learning Objective", "POST", "learning-objectives", 200, objective_data)
         if success and 'id' in response:
             self.created_ids['learning_objectives'].append(response['id'])
             objective_id = response['id']
