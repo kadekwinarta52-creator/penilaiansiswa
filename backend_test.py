@@ -70,10 +70,13 @@ class TeacherGradingAPITester:
         print("TESTING STUDENT MANAGEMENT")
         print("="*50)
         
+        # Generate unique identifiers
+        timestamp = str(int(time.time()))
+        
         # Test create student
         student_data = {
-            "nama": "Test Student 1",
-            "nis": "TEST001",
+            "nama": f"Test Student {timestamp}",
+            "nis": f"TEST{timestamp}",
             "kelas": "X1",
             "jenis_kelamin": "Laki-laki",
             "status": "Aktif"
