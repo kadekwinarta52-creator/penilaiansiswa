@@ -391,7 +391,9 @@ async def get_objectives_by_subject_class(subject_id: str, kelas: str):
     for obj_id in sco["learning_objective_ids"]:
         obj = await db.learning_objectives.find_one({"id": obj_id})
         if obj:
-            objectives.append(LearningObjective(**obj))
+            # Remove MongoDB _id field to prevent serialization issues
+            obj_clean = {k: v for k, v in obj.items() if k != "_id"}
+            objectives.append(LearningObjective(**obj_clean))
     
     return objectives
 
