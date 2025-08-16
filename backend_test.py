@@ -162,7 +162,7 @@ class TeacherGradingAPITester:
             return False
 
         # Test create another learning objective
-        objective_data2 = {"tujuan_pembelajaran": "Menyelesaikan persamaan linear"}
+        objective_data2 = {"tujuan_pembelajaran": f"Menyelesaikan persamaan linear {timestamp}"}
         success, response = self.run_test("Create Learning Objective 2", "POST", "learning-objectives", 200, objective_data2)
         if success and 'id' in response:
             self.created_ids['learning_objectives'].append(response['id'])
