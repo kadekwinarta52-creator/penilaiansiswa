@@ -168,7 +168,7 @@ async def get_students(search: Optional[str] = None, kelas: Optional[str] = None
         query["kelas"] = kelas.upper()
     
     students = await db.students.find(query).sort("nama", 1).to_list(1000)
-    return [Student(**student) for student in students]
+    return [Student(**{k: v for k, v in student.items() if k != "_id"}) for student in students]
 
 @api_router.get("/students/{student_id}", response_model=Student)
 async def get_student(student_id: str):
