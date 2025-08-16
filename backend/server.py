@@ -234,7 +234,7 @@ async def create_subject(subject: SubjectCreate):
 @api_router.get("/subjects", response_model=List[Subject])
 async def get_subjects():
     subjects = await db.subjects.find().sort("nama_mata_pelajaran", 1).to_list(1000)
-    return [Subject(**subject) for subject in subjects]
+    return [Subject(**{k: v for k, v in subject.items() if k != "_id"}) for subject in subjects]
 
 @api_router.put("/subjects/{subject_id}", response_model=Subject)
 async def update_subject(subject_id: str, subject_update: SubjectCreate):
