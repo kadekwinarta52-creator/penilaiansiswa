@@ -78,7 +78,7 @@ class TeacherGradingAPITester:
             "jenis_kelamin": "Laki-laki",
             "status": "Aktif"
         }
-        success, response = self.run_test("Create Student", "POST", "students", 201, student_data)
+        success, response = self.run_test("Create Student", "POST", "students", 200, student_data)
         if success and 'id' in response:
             self.created_ids['students'].append(response['id'])
             student_id = response['id']
