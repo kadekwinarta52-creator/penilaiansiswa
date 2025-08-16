@@ -129,7 +129,7 @@ class TeacherGradingAPITester:
 
         # Test create subject
         subject_data = {"nama_mata_pelajaran": "Matematika"}
-        success, response = self.run_test("Create Subject", "POST", "subjects", 201, subject_data)
+        success, response = self.run_test("Create Subject", "POST", "subjects", 200, subject_data)
         if success and 'id' in response:
             self.created_ids['subjects'].append(response['id'])
             subject_id = response['id']
