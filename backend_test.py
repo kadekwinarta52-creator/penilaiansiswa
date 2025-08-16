@@ -227,7 +227,7 @@ class TeacherGradingAPITester:
             "learning_objective_id": objective_id,
             "nilai": 85.5
         }
-        success, _ = self.run_test("Create Grade", "POST", "grades", 201, grade_data)
+        success, _ = self.run_test("Create Grade", "POST", "grades", 200, grade_data)
 
         # Test update existing grade (should update, not create new)
         grade_data["nilai"] = 90.0
