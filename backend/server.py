@@ -333,11 +333,16 @@ async def get_subject_class_objectives():
         for obj_id in sco["learning_objective_ids"]:
             obj = await db.learning_objectives.find_one({"id": obj_id})
             if obj:
-                objectives.append(obj)
+                # Remove MongoDB _id field to prevent serialization issues
+                obj_clean = {k: v for k, v in obj.items() if k != "_id"}
+                objectives.append(obj_clean)
+        
+        # Clean subject data
+        subject_clean = {k: v for k, v in subject.items() if k != "_id"} if subject else None
         
         result.append({
             "id": sco["id"],
-            "subject": subject,
+            "subject": subject_clean,
             "kelas": sco["kelas"],
             "learning_objectives": objectives,
             "created_at": sco["created_at"]
