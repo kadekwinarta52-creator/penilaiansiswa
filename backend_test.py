@@ -130,8 +130,11 @@ class TeacherGradingAPITester:
         print("TESTING SUBJECT MANAGEMENT")
         print("="*50)
 
+        # Generate unique identifiers
+        timestamp = str(int(time.time()))
+
         # Test create subject
-        subject_data = {"nama_mata_pelajaran": "Matematika"}
+        subject_data = {"nama_mata_pelajaran": f"Matematika {timestamp}"}
         success, response = self.run_test("Create Subject", "POST", "subjects", 200, subject_data)
         if success and 'id' in response:
             self.created_ids['subjects'].append(response['id'])
