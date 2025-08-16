@@ -171,7 +171,7 @@ class TeacherGradingAPITester:
         success, _ = self.run_test("Get All Learning Objectives", "GET", "learning-objectives", 200)
 
         # Test update learning objective
-        update_data = {"tujuan_pembelajaran": "Memahami konsep dasar aljabar dan geometri"}
+        update_data = {"tujuan_pembelajaran": f"Memahami konsep dasar aljabar dan geometri {timestamp}"}
         success, _ = self.run_test("Update Learning Objective", "PUT", f"learning-objectives/{objective_id}", 200, update_data)
 
         return True
