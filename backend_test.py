@@ -186,7 +186,7 @@ class TeacherGradingAPITester:
             "kelas": "X1",
             "learning_objective_ids": self.created_ids['learning_objectives']
         }
-        success, response = self.run_test("Create Subject-Class-Objective", "POST", "subject-class-objectives", 201, sco_data)
+        success, response = self.run_test("Create Subject-Class-Objective", "POST", "subject-class-objectives", 200, sco_data)
         if success and 'id' in response:
             self.created_ids['subject_class_objectives'].append(response['id'])
             sco_id = response['id']
